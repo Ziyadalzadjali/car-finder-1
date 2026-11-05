@@ -1,0 +1,187 @@
+<title>Sooq Cars Explorer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a filter rail over a two-chart summary strip, then a sortable listings ledger. */
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --ink:#1b2422; --muted:#5f6b67; --line:#dde2df;
+  --accent:#0e6b5c; --accent-soft:#d8ece7; --flag:#b4541a;
+  --f-display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --f-body:"Source Sans 3",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121816; --surface:#1a2220; --ink:#e6ece9; --muted:#97a5a0; --line:#2c3633;
+  --accent:#4fbfa8; --accent-soft:#1f3a34; --flag:#e8955c; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121816; --surface:#1a2220; --ink:#e6ece9; --muted:#97a5a0; --line:#2c3633;
+  --accent:#4fbfa8; --accent-soft:#1f3a34; --flag:#e8955c; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 24px}
+h1{font:700 2.4rem/1 var(--f-display);letter-spacing:.01em;margin:0;text-wrap:balance}
+h1 span{color:var(--accent)}
+.sub{color:var(--muted);margin:0;font-size:.95rem}
+h2{font:600 1.05rem/1.2 var(--f-display);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 10px}
+.filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:12px;align-items:end;
+  background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px}
+.filters label{display:flex;flex-direction:column;gap:4px;font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);min-width:0}
+.filters input,.filters select{font:inherit;font-size:.95rem;text-transform:none;letter-spacing:0;color:var(--ink);background:var(--bg);
+  border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%;min-width:0}
+.pair{display:flex;gap:6px}
+.check{flex-direction:row!important;align-items:center;gap:8px!important;white-space:nowrap;padding-bottom:8px}
+.check input{width:auto}
+input:focus-visible,select:focus-visible,button:focus-visible,a:focus-visible,th:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.stats{display:flex;flex-wrap:wrap;gap:8px 32px;align-items:baseline}
+.stat b{font:600 1.9rem/1 var(--f-display);font-variant-numeric:tabular-nums;display:block}
+.stat small{color:var(--muted);font-size:.8rem;text-transform:uppercase;letter-spacing:.06em}
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.bars{display:flex;flex-direction:column;gap:5px}
+.bar{display:grid;grid-template-columns:96px 1fr 44px;gap:8px;align-items:center;font-size:.85rem;cursor:pointer;background:none;border:0;color:inherit;padding:0;text-align:left;font-family:inherit}
+.bar .t{height:14px;background:var(--line);border-radius:3px;overflow:hidden}
+.bar .t i{display:block;height:100%;background:var(--accent)}
+.bar .n{font-family:var(--f-mono);font-size:.8rem;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted)}
+.bar.on .t i{background:var(--flag)}
+.bar span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#hist svg{width:100%;height:auto;display:block}
+#hist text{fill:var(--muted);font:11px var(--f-mono)}
+.tablebox{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.92rem;min-width:640px}
+th,td{padding:8px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{font:600 .8rem var(--f-body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted);cursor:pointer;user-select:none;position:sticky;top:0;background:var(--surface)}
+th[aria-sort="ascending"]::after{content:" ▲";color:var(--accent)}
+th[aria-sort="descending"]::after{content:" ▼";color:var(--accent)}
+td.num,th.num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+td.name{white-space:normal;min-width:220px}
+td a{color:var(--accent);text-decoration:none}
+td a:hover{text-decoration:underline}
+.chip{display:inline-block;font:500 .72rem var(--f-mono);padding:1px 6px;border-radius:4px;background:var(--accent-soft);color:var(--accent);margin-left:6px}
+.chip.down{background:transparent;border:1px solid var(--flag);color:var(--flag)}
+.pager{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;color:var(--muted);font-size:.9rem}
+.pager button{font:inherit;padding:6px 14px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+.pager button:disabled{opacity:.4;cursor:default}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.note{color:var(--muted);font-size:.82rem;max-width:70ch}
+@media (max-width:820px){.filters{grid-template-columns:1fr 1fr}.filters .q{grid-column:1/-1}.charts{grid-template-columns:1fr}}
+@media (max-width:420px){.filters{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:no-preference){.bar .t i{transition:width .25s ease}}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Sooq Cars <span>Explorer</span></h1>
+    <p class="sub">2,510 Oman listings from the cleaned scroll dump · prices in Omani rials (OMR)</p>
+  </header>
+
+  <form class="filters" id="filters" onsubmit="return false">
+    <label class="q">Search
+      <input id="q" type="search" placeholder="Land Cruiser VX.R, Camry SE, 2387233…" autocomplete="off">
+    </label>
+    <label>Make
+      <select id="make"><option value="">All makes</option></select>
+    </label>
+    <label>Year
+      <span class="pair"><input id="y0" type="number" inputmode="numeric" placeholder="from"><input id="y1" type="number" inputmode="numeric" placeholder="to"></span>
+    </label>
+    <label>Price (OMR)
+      <span class="pair"><input id="p0" type="number" inputmode="numeric" placeholder="min"><input id="p1" type="number" inputmode="numeric" placeholder="max"></span>
+    </label>
+    <label class="check"><input id="chg" type="checkbox"> Price changed</label>
+  </form>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="charts">
+    <div class="panel"><h2>Listings by make</h2><div class="bars" id="makes"></div></div>
+    <div class="panel"><h2>Price spread</h2><div id="hist"></div></div>
+  </div>
+
+  <div class="tablebox">
+    <table>
+      <thead><tr>
+        <th data-k="id" class="num" tabindex="0">ID</th>
+        <th data-k="name" tabindex="0">Car</th>
+        <th data-k="year" class="num" tabindex="0">Year</th>
+        <th data-k="price" class="num" tabindex="0" aria-sort="descending">Price</th>
+        <th data-k="seen" class="num" tabindex="0">Seen</th>
+        <th>Link</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+  </div>
+  <div class="pager"><span id="pinfo"></span><span><button id="prev" type="button">Previous</button> <button id="next" type="button">Next</button></span></div>
+  <p class="note">"Seen" counts how many times the listing card was captured while scrolling. A price chip shows the earlier asking price for the 17 listings that changed during the scrape (scroll order, not dated).</p>
+</div>
+
+<script>
+const RAW = __DATA__;
+const D = RAW.map(r => ({id:r[0], year:r[1], make:r[2], model:r[3], price:r[4], hist:r[5], seen:r[6], slug:r[7],
+  name:r[2]+" "+r[3], hay:(r[0]+" "+r[2]+" "+r[3]+" "+r[1]).toLowerCase()}));
+const $ = id => document.getElementById(id);
+const fmt = n => n.toLocaleString("en-US");
+const PAGE = 50;
+let sortK = "price", sortDir = -1, page = 0;
+
+const makeCounts = {};
+D.forEach(d => makeCounts[d.make] = (makeCounts[d.make]||0)+1);
+Object.keys(makeCounts).sort().forEach(m => { const o=document.createElement("option"); o.value=m; o.textContent=`${m} (${makeCounts[m]})`; $("make").append(o); });
+
+function filtered(){
+  const q=$("q").value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+  const mk=$("make").value, y0=+$("y0").value||0, y1=+$("y1").value||9999, p0=+$("p0").value||0, p1=+$("p1").value||Infinity, chg=$("chg").checked;
+  return D.filter(d => (!mk||d.make===mk) && d.year>=y0 && d.year<=y1 && d.price>=p0 && d.price<=p1 && (!chg||d.hist.length) && q.every(w=>d.hay.includes(w)));
+}
+const median = a => { if(!a.length) return 0; const s=[...a].sort((x,y)=>x-y), m=s.length>>1; return s.length%2?s[m]:Math.round((s[m-1]+s[m])/2); };
+
+function renderStats(rows){
+  const p=rows.map(r=>r.price);
+  const items=[["Listings",fmt(rows.length)],["Median price",p.length?fmt(median(p))+" OMR":"–"],
+    ["Average price",p.length?fmt(Math.round(p.reduce((a,b)=>a+b,0)/p.length))+" OMR":"–"],
+    ["Range",p.length?fmt(Math.min(...p))+" – "+fmt(Math.max(...p)):"–"]];
+  $("stats").innerHTML=items.map(([k,v])=>`<div class="stat"><b>${v}</b><small>${k}</small></div>`).join("");
+}
+function renderMakes(rows){
+  const c={}; rows.forEach(r=>c[r.make]=(c[r.make]||0)+1);
+  const top=Object.entries(c).sort((a,b)=>b[1]-a[1]).slice(0,10), max=top.length?top[0][1]:1, sel=$("make").value;
+  $("makes").innerHTML=top.length?top.map(([m,n])=>`<button type="button" class="bar${m===sel?" on":""}" data-m="${m}" title="Filter to ${m}"><span>${m}</span><span class="t"><i style="width:${n/max*100}%"></i></span><span class="n">${fmt(n)}</span></button>`).join(""):`<p class="empty">No listings match.</p>`;
+}
+function renderHist(rows){
+  const edges=[0,1000,2000,3000,4000,5000,7500,10000,15000,20000,Infinity];
+  const labels=["<1k","1k","2k","3k","4k","5k","7.5k","10k","15k","20k+"];
+  const c=edges.slice(0,-1).map((e,i)=>rows.filter(r=>r.price>=e&&r.price<edges[i+1]).length);
+  const W=460,H=190,pl=36,pb=24,pt=10,bw=(W-pl)/c.length, max=Math.max(1,...c);
+  const step=max>400?200:max>200?100:max>80?40:max>40?20:max>10?5:1, top=Math.ceil(max/step)*step;
+  const y=v=>pt+(H-pt-pb)*(1-v/top);
+  let s=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Price distribution histogram">`;
+  for(let v=0;v<=top;v+=step) s+=`<line x1="${pl}" x2="${W}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${pl-6}" y="${y(v)+4}" text-anchor="end">${v}</text>`;
+  c.forEach((n,i)=>{ const x=pl+i*bw+3; s+=`<rect x="${x}" y="${y(n)}" width="${bw-6}" height="${H-pb-y(n)}" rx="2" fill="var(--accent)"><title>${labels[i]} OMR: ${n}</title></rect><text x="${x+(bw-6)/2}" y="${H-8}" text-anchor="middle">${labels[i]}</text>`; });
+  $("hist").innerHTML=s+"</svg>";
+}
+function renderTable(rows){
+  rows.sort((a,b)=>{ const A=a[sortK],B=b[sortK]; return (typeof A==="string"?A.localeCompare(B):A-B)*sortDir; });
+  const pages=Math.max(1,Math.ceil(rows.length/PAGE)); page=Math.min(page,pages-1);
+  const slice=rows.slice(page*PAGE,page*PAGE+PAGE);
+  $("rows").innerHTML=slice.length?slice.map(r=>{
+    const prev=r.hist.length?r.hist[0]:null, chip=prev?`<span class="chip${r.price<prev?" down":""}" title="Price history: ${r.hist.map(fmt).join(" → ")}">was ${fmt(prev)}</span>`:"";
+    return `<tr><td class="num">${r.id}</td><td class="name">${r.name}</td><td class="num">${r.year}</td><td class="num">${fmt(r.price)}${chip}</td><td class="num">${r.seen}</td><td><a href="https://sooq-cars.com/om/en/ready/cars/${r.id}-${r.slug}" target="_blank" rel="noopener">Open ↗</a></td></tr>`;
+  }).join(""):`<tr><td colspan="6" class="empty">No listings match these filters. Clear a filter to see more.</td></tr>`;
+  $("pinfo").textContent=rows.length?`Showing ${fmt(page*PAGE+1)}–${fmt(page*PAGE+slice.length)} of ${fmt(rows.length)}`:"0 listings";
+  $("prev").disabled=page===0; $("next").disabled=page>=pages-1;
+  document.querySelectorAll("th[data-k]").forEach(th=>th.dataset.k===sortK?th.setAttribute("aria-sort",sortDir>0?"ascending":"descending"):th.removeAttribute("aria-sort"));
+}
+function render(){ const r=filtered(); renderStats(r); renderMakes(r); renderHist(r); renderTable(r); }
+
+$("filters").addEventListener("input",()=>{page=0;render();});
+$("makes").addEventListener("click",e=>{const b=e.target.closest(".bar"); if(!b) return; $("make").value=$("make").value===b.dataset.m?"":b.dataset.m; page=0; render();});
+document.querySelectorAll("th[data-k]").forEach(th=>{
+  const go=()=>{ if(sortK===th.dataset.k) sortDir*=-1; else {sortK=th.dataset.k; sortDir=(sortK==="name")?1:-1;} page=0; render(); };
+  th.addEventListener("click",go); th.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();go();}});
+});
+$("prev").onclick=()=>{page--;render();window.scrollTo({top:$("rows").closest(".tablebox").offsetTop-20});};
+$("next").onclick=()=>{page++;render();window.scrollTo({top:$("rows").closest(".tablebox").offsetTop-20});};
+render();
+</script>
