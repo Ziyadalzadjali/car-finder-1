@@ -1,6 +1,10 @@
 # Raw scroll dump is ~247 MB, over GitHub's 100 MB file limit
 sooq_cars_infinite_scale_dump.json
 *_dump.json
+# Scanner database and full exports (large, regenerate with scanner.py)
+cars.db
+*.db-journal
+data/sooq_cars_full.*
 # Scraper working files
 sooq_cars_master_database.json
 *.tmp

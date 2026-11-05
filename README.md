@@ -11,7 +11,33 @@ Car listings scraped from [sooq-cars.com](https://sooq-cars.com/om/en/ready) (Om
 | `data/sooq_cars_sample.json` | 51 listings with full details (mileage, fuel, region, seller, colors) |
 | `explorer/sooq-cars-explorer.html` | Search, filter and sort page. Open it in a browser |
 | `explorer/template.html`, `explorer/build_explorer.py` | Rebuild the explorer page from the cleaned data |
+| `scanner.py` | Full scanner: finds every listing and saves its details to SQLite |
 | `scraper/` | First version of the multi-process scraper (see known issues) |
+
+## Scanning the whole site
+
+`scanner.py` needs only Python 3 (no packages). It works in two steps and saves everything to `cars.db`, so you can stop it with Ctrl+C at any time and run the same command again to pick up where it stopped.
+
+```bash
+python scanner.py pages      # step 1: every listing ID, title and price
+python scanner.py details    # step 2: specs from each car's own page
+python scanner.py export     # writes data/sooq_cars_full.csv and .json
+python scanner.py stats      # what's in the database so far
+```
+
+`python scanner.py all` runs all three in a row.
+
+**How long it takes** (at the default 1.5 seconds between requests, Oman):
+- `pages`: about 3,150 results pages of 20 cars, roughly 80 minutes, for about 63,000 listings.
+- `details`: one request per car, roughly 26 hours for all of them. Use `--limit 500` to do it in batches. Later runs only fetch cars that don't have details yet.
+
+**What it saves per car:** ID, URL, title, year, make, model, trim, price, currency, status, first and last seen time, odometer, deal type, body type, cylinders, transmission, keys, options, drive type, fuel, exterior and interior color, published date, region, specs (GCC / imported), seller, photo count, plus any other fields on the page (such as VIN) in `extra`. Every price change goes into a price history.
+
+**Keeping it up to date:** run `pages` again (it starts a new crawl after a finished one). Cars that are no longer in the results become `not_listed`; cars whose page returns 404 become `removed`. Add `--refresh-days 7` to `details` to refetch specs older than a week.
+
+**Options:** `--delay` (seconds between requests, minimum 1), `--country` (`om`, `ae`, `qa`, `sa`...), `--db`, `--max-pages`, `--fresh`, `--limit`, `--refresh-days`, `--out`.
+
+It only fetches pages the site's `robots.txt` allows (results pages with `?page=N` and listing pages), makes one request at a time, backs off when the site returns errors or asks it to slow down, and stops after 5 failures in a row. Keep the delay at 1 second or more.
 
 ## Cleaning the raw dump
 
