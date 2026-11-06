@@ -26,6 +26,7 @@ import csv
 import datetime as dt
 import gzip
 import html
+import http.client
 import json
 import os
 import re
@@ -53,7 +54,9 @@ COLUMNS = ["listing_id", "url", "title", "year", "make", "model", "trim", "price
            "status", "first_seen", "last_seen", "card_posted", "details_at",
            *SPEC_FIELDS.values(), "published_iso", "seller", "photos", "availability", "extra"]
 
-CARD_RE = re.compile(r"^(?P<price>[\d,]+)\s+(?P<cur>[A-Z]{3})\s+(?P<name>.+?\s(?:19|20)\d{2})\s+(?P<ago>.+?ago|just now)\b")
+# "7,900 OMR TOYOTA AVALON LIMITED 2019 19 minutes ago" or "Ask for price! KIA SELTOS SX 2026 24 minutes ago"
+CARD_RE = re.compile(r"^(?:(?P<price>[\d,]+)\s+(?P<cur>[A-Z]{3})|Ask for price!)\s+"
+                     r"(?P<name>.+?\s(?:19|20)\d{2})\s+(?P<ago>.+?ago|just now)\b")
 
 
 def now():
@@ -125,7 +128,7 @@ class Fetcher:
                 reason = f"HTTP {e.code}"
                 if e.code not in (429, 500, 502, 503, 504):
                     raise
-            except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as e:
+            except (urllib.error.URLError, http.client.HTTPException, TimeoutError, ConnectionError, OSError) as e:
                 retry_after, reason = "", str(e)
             if attempt == len(RETRY_WAITS):
                 break
@@ -166,8 +169,8 @@ def parse_results_page(text, country):
         card = {"url": BASE + m.group(1), "price": None, "currency": None, "title": None, "card_posted": None}
         cm = CARD_RE.match(card_text)
         if cm:
-            card.update(price=int(cm["price"].replace(",", "")), currency=cm["cur"],
-                        title=cm["name"], card_posted=cm["ago"])
+            card.update(price=int(cm["price"].replace(",", "")) if cm["price"] else None,
+                        currency=cm["cur"], title=cm["name"], card_posted=cm["ago"])
         if lid not in cards or card["price"] is not None:
             cards[lid] = card
     return cards

@@ -4,6 +4,7 @@ sooq_cars_infinite_scale_dump.json
 # Scanner database and full exports (large, regenerate with scanner.py)
 cars.db
 *.db-journal
+*.log
 data/sooq_cars_full.*
 # Scraper working files
 sooq_cars_master_database.json
