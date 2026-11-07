@@ -9,8 +9,8 @@ Car listings scraped from [sooq-cars.com](https://sooq-cars.com/om/en/ready) (Om
 | `clean_dump.py` | Turns the raw infinite-scroll dump into one record per listing |
 | `data/sooq_cars_dump_clean.csv` / `.json` | 2,510 unique listings from the cleaned dump |
 | `data/sooq_cars_sample.json` | 51 listings with full details (mileage, fuel, region, seller, colors) |
-| `explorer/sooq-cars-explorer.html` | Search, filter and sort page. Open it in a browser |
-| `explorer/template.html`, `explorer/build_explorer.py` | Rebuild the explorer page from the cleaned data |
+| `explorer/sooq-cars-explorer.html` | Search, filter and sort page for all scanned cars. Open it in a browser |
+| `explorer/template.html`, `explorer/build_explorer.py` | Rebuild the explorer page: run `python scanner.py export`, then `python explorer/build_explorer.py` |
 | `scanner.py` | Full scanner: finds every listing and saves its details to SQLite |
 | `scraper/` | First version of the multi-process scraper (see known issues) |
 
