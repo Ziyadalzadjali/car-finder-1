@@ -225,6 +225,8 @@ def split_name(name, make_slug, model_slug):
             break
     if make is None and words:
         make, k = words[0], 1
+    if model is None and k < len(words):
+        model, k = words[k], k + 1  # no model link on the page: take the next word
     return make, model, " ".join(words[k:]) or None, year
 
 
@@ -348,7 +350,7 @@ def cmd_details(db, f, args):
         elif status == 200:
             d = parse_detail_page(text, args.country)
             d["details_at"] = now()
-            cols = [c for c in d if c in COLUMNS]
+            cols = [c for c in d if c in COLUMNS and d[c] is not None]  # never blank out known values
             db.execute(f"UPDATE listings SET {', '.join(c + '=?' for c in cols)} WHERE listing_id=?",
                        [d[c] for c in cols] + [lid])
             if d.get("availability") and d["availability"] != "InStock":
